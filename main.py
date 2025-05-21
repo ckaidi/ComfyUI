@@ -223,6 +223,11 @@ async def run(server_instance, address='', port=8188, verbose=True, call_on_star
 def hijack_progress(server_instance):
     def hook(value, total, preview_image):
         comfy.model_management.throw_exception_if_processing_interrupted()
+        try:  
+            server_instance.progress_value=value
+            server_instance.progress_max=total
+        except Exception as e:
+            logging.error(e)
         progress = {"value": value, "max": total, "prompt_id": server_instance.last_prompt_id, "node": server_instance.last_node_id}
 
         server_instance.send_sync("progress", progress, server_instance.client_id)

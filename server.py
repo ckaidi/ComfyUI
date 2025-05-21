@@ -164,6 +164,11 @@ class PromptServer():
         self.messages = asyncio.Queue()
         self.client_session:Optional[aiohttp.ClientSession] = None
         self.number = 0
+        
+        self.progress_value=-1
+        self.progress_max=-1
+        self.node_num=-1
+        self.node_index=-1
 
         middlewares = [cache_control]
         if args.enable_compress_response_body:
@@ -219,6 +224,8 @@ class PromptServer():
 
         @routes.get("/")
         async def get_root(request):
+            if args.disable_frontend:
+                return web.Response(body='hhhhh')
             response = web.FileResponse(os.path.join(self.web_root, "index.html"))
             response.headers['Cache-Control'] = 'no-cache'
             response.headers["Pragma"] = "no-cache"
@@ -552,6 +559,10 @@ class PromptServer():
         @routes.get("/prompt")
         async def get_prompt(request):
             return web.json_response(self.get_queue_info())
+        
+        @routes.get("/progress")
+        async def get_progress(request):
+            return web.json_response({"value": self.progress_value, "max": self.progress_max, "prompt_id": self.last_prompt_id, "node_num":self.node_num,"node_index":self.node_index,"node": self.last_node_id})
 
         def node_info(node_class):
             obj_class = nodes.NODE_CLASS_MAPPINGS[node_class]
