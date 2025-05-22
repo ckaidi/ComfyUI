@@ -165,6 +165,7 @@ class PromptServer():
         self.client_session:Optional[aiohttp.ClientSession] = None
         self.number = 0
         
+        self.last_prompt_id=-1
         self.progress_value=-1
         self.progress_max=-1
         self.node_num=-1
