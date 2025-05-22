@@ -508,12 +508,6 @@ class PromptExecutor:
                     cached_nodes.append(node_id)
 
             comfy.model_management.cleanup_models_gc()
-
-            try:
-                self.server.node_num = len(prompt)
-                self.server.node_index=0
-            except Exception as e:
-                logging.error(e)
         
             self.add_message("execution_cached",
                           { "nodes": cached_nodes, "prompt_id": prompt_id},
@@ -524,8 +518,16 @@ class PromptExecutor:
             current_outputs = self.caches.outputs.all_node_ids()
             for node_id in list(execute_outputs):
                 execution_list.add_node(node_id)
-            index=0
+
+            try:
+                self.server.node_num = len(execution_list.pendingNodes)
+                self.server.node_index=0
+            except Exception as e:
+                logging.error(e)
+            
+            index=-1
             while not execution_list.is_empty():
+                index+=1
                 try:
                     self.server.node_index=index
                 except Exception as e:
@@ -544,7 +546,6 @@ class PromptExecutor:
                     execution_list.unstage_node_execution()
                 else: # result == ExecutionResult.SUCCESS:
                     execution_list.complete_node_execution()
-                index+=1
             else:
                 # Only execute when the while-loop ends without break
                 self.add_message("execution_success", { "prompt_id": prompt_id }, broadcast=False)
