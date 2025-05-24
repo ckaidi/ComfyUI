@@ -563,6 +563,11 @@ class PromptExecutor:
                 "meta": meta_outputs,
             }
             self.server.last_node_id = None
+            try:
+                self.server.last_username=''
+                self.server.last_user_task_id=''
+            except Exception:
+                print('set failed')
             if comfy.model_management.DISABLE_SMART_MEMORY:
                 comfy.model_management.unload_all_models()
 

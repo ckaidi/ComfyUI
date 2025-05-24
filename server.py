@@ -164,12 +164,15 @@ class PromptServer():
         self.messages = asyncio.Queue()
         self.client_session:Optional[aiohttp.ClientSession] = None
         self.number = 0
-        
-        self.last_prompt_id=-1
-        self.progress_value=-1
-        self.progress_max=-1
-        self.node_num=-1
-        self.node_index=-1
+
+        self.last_username = ''
+        self.last_user_task_id = ''
+        self.last_prompt_id = -1
+        self.progress_value = -1
+        self.progress_max = -1
+        self.node_num = -1
+        self.node_index = -1
+        self.local_ip = self.get_local_ip()
 
         middlewares = [cache_control]
         if args.enable_compress_response_body:
@@ -201,6 +204,13 @@ class PromptServer():
             ws = web.WebSocketResponse()
             await ws.prepare(request)
             sid = request.rel_url.query.get('clientId', '')
+            try:
+                task_id = request.rel_url.query.get('taskId', '')
+                if sid!=self.last_username or task_id!=self.last_user_task_id:
+                    await ws.close(code=4000,message='任务未开始获已结束'.encode('utf-8'))
+                    return ws
+            except Exception as e:
+                logging.warning(f'拒绝ws连接失败: {e}')
             if sid:
                 # Reusing existing session, remove old
                 self.sockets.pop(sid, None)
@@ -226,7 +236,7 @@ class PromptServer():
         @routes.get("/")
         async def get_root(request):
             if args.disable_frontend:
-                return web.Response(body='hhhhh')
+                return web.Response(body='')
             response = web.FileResponse(os.path.join(self.web_root, "index.html"))
             response.headers['Cache-Control'] = 'no-cache'
             response.headers["Pragma"] = "no-cache"
@@ -638,6 +648,23 @@ class PromptServer():
             queue_info['queue_pending'] = current_queue[1]
             return web.json_response(queue_info)
 
+        # @routes.get("/queue_running")
+        # async def get_queue(request):
+        #     current_queue = self.prompt_queue.get_current_queue()
+        #     if len(current_queue[0]) == 0:
+        #         return web.json_response({
+        #             'success': True,
+        #             'msg': '',
+        #             'data': []
+        #         })
+        #     return web.json_response({
+        #         'success': True,
+        #         'msg': '',
+        #         'data': [
+        #             current_queue[0][0][1]
+        #         ]
+        #     })
+
         @routes.post("/prompt")
         async def post_prompt(request):
             logging.info("got prompt")
@@ -656,6 +683,15 @@ class PromptServer():
 
             if "prompt" in json_data:
                 prompt = json_data["prompt"]
+                try:
+                    if '0' in prompt and 'class_type' in prompt['0'] and prompt['0']['class_type'] == 'Primitive string multiline [Crystools]' and '_meta' in prompt['0'] and 'title' in prompt['0']['_meta'] and prompt['0']['_meta']['title'] == 'info' and 'inputs' in prompt['0'] and 'string' in prompt['0']['inputs']:
+                        content = prompt['0']['inputs']['string']
+                        json_data=json.loads(content)
+                        if 'username' in json_data and 'task_id' in json_data:
+                            self.last_username=json_data['username']
+                            self.last_user_task_id=json_data['task_id']
+                except Exception as e:
+                    logging.error(e)
                 valid = execution.validate_prompt(prompt)
                 extra_data = {}
                 if "extra_data" in json_data:
@@ -728,6 +764,23 @@ class PromptServer():
         timeout = aiohttp.ClientTimeout(total=None) # no timeout
         self.client_session = aiohttp.ClientSession(timeout=timeout)
 
+    # 获取ip地址
+    def get_local_ip(self) -> str:
+        try:
+            # 创建一个UDP套接字
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            # 连接到一个外部地址（这里使用了Google的公共DNS服务器）
+            s.connect(("8.8.8.8", 80))
+            # 获取本地套接字的IP地址
+            local_ip = s.getsockname()[0]
+            logging.info(f'本地地址: {local_ip}')
+            return local_ip
+        except Exception as e:
+            return ''
+        finally:
+            # 关闭套接字
+            s.close()
+
     def add_routes(self):
         self.user_manager.add_routes(self.routes)
         self.model_file_manager.add_routes(self.routes)
@@ -767,6 +820,10 @@ class PromptServer():
         exec_info = {}
         exec_info['queue_remaining'] = self.prompt_queue.get_tasks_remaining()
         prompt_info['exec_info'] = exec_info
+        try:
+            prompt_info['ip_address'] = self.local_ip
+        except:
+            logging.warning('set prompt_info ip_address failed')
         return prompt_info
 
     async def send(self, event, data, sid=None):
