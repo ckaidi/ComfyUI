@@ -204,13 +204,13 @@ class PromptServer():
             ws = web.WebSocketResponse()
             await ws.prepare(request)
             sid = request.rel_url.query.get('clientId', '')
-            try:
-                task_id = request.rel_url.query.get('taskId', '')
-                if sid!=self.last_username or task_id!=self.last_user_task_id:
-                    await ws.close(code=4000,message='任务未开始获已结束'.encode('utf-8'))
-                    return ws
-            except Exception as e:
-                logging.warning(f'拒绝ws连接失败: {e}')
+            # try:
+            #     task_id = request.rel_url.query.get('taskId', '')
+            #     if sid=='' or task_id=='' or sid!=self.last_username or task_id!=self.last_user_task_id:
+            #         await ws.close(code=4000,message='任务未开始获已结束'.encode('utf-8'))
+            #         return ws
+            # except Exception as e:
+            #     logging.warning(f'拒绝ws连接失败: {e}')
             if sid:
                 # Reusing existing session, remove old
                 self.sockets.pop(sid, None)
@@ -573,7 +573,7 @@ class PromptServer():
         
         @routes.get("/progress")
         async def get_progress(request):
-            return web.json_response({"value": self.progress_value, "max": self.progress_max, "prompt_id": self.last_prompt_id, "node_num":self.node_num,"node_index":self.node_index,"node": self.last_node_id})
+            return web.json_response({"user": self.last_username, "task_id": self.last_user_task_id, "value": self.progress_value, "max": self.progress_max, "prompt_id": self.last_prompt_id, "node_num": self.node_num, "node_index": self.node_index, "node": self.last_node_id})
 
         def node_info(node_class):
             obj_class = nodes.NODE_CLASS_MAPPINGS[node_class]
@@ -655,14 +655,16 @@ class PromptServer():
         #         return web.json_response({
         #             'success': True,
         #             'msg': '',
-        #             'data': []
+        #             'data': {}
         #         })
         #     return web.json_response({
         #         'success': True,
         #         'msg': '',
-        #         'data': [
-        #             current_queue[0][0][1]
-        #         ]
+        #         'data': {
+        #             'prompt_id': current_queue[0][0][1],
+        #             "user":self.last_username,
+        #             "user_task_id":self.last_user_task_id
+        #         }
         #     })
 
         @routes.post("/prompt")
