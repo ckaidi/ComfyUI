@@ -167,7 +167,7 @@ class PromptServer():
 
         self.last_username = ''
         self.last_user_task_id = ''
-        self.last_prompt_id = -1
+        self.last_prompt_id = ''
         self.progress_value = -1
         self.progress_max = -1
         self.node_num = -1
@@ -690,8 +690,8 @@ class PromptServer():
                         content = prompt['0']['inputs']['string']
                         json_data=json.loads(content)
                         if 'username' in json_data and 'task_id' in json_data:
-                            self.last_username=json_data['username']
-                            self.last_user_task_id=json_data['task_id']
+                            self.last_username=str(json_data['username'])
+                            self.last_user_task_id=str(json_data['task_id'])
                 except Exception as e:
                     logging.error(e)
                 valid = execution.validate_prompt(prompt)

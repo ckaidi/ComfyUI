@@ -1,0 +1,2 @@
+wget https://github.com/git-for-windows/git/releases/download/v2.49.0.windows.1/Git-2.49.0-64-bit.exe -o git-setup.exe
+wget https://www.python.org/ftp/python/3.11.9/python-3.11.9-amd64.exe -o python-setup.exe

@@ -171,7 +171,7 @@ def prompt_worker(q, server_instance):
             item, item_id = queue_item
             execution_start_time = time.perf_counter()
             prompt_id = item[1]
-            server_instance.last_prompt_id = prompt_id
+            server_instance.last_prompt_id = str(prompt_id)
 
             e.execute(item[2], prompt_id, item[3], item[4])
             need_gc = True
