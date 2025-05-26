@@ -1,3 +1,4 @@
+git pull
 cd custom_nodes
 
 git clone --depth=1 --branch=main https://githubfast.com/ckaidi/ComfyUI-Crystools.git
