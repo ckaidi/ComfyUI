@@ -692,6 +692,12 @@ class PromptServer():
                         if 'username' in json_data and 'task_id' in json_data:
                             self.last_username=str(json_data['username'])
                             self.last_user_task_id=str(json_data['task_id'])
+                            try:
+                                import redis
+                                r = redis.Redis(host='172.16.2.35', port=6379, decode_responses=True,password='JpVxR2zuX8rGiLTzT6NSJrO5r2UpKSsg')  
+                                r.set(self.last_user_task_id,self.local_ip)
+                            except Exception as e: 
+                                logging.error(e)
                 except Exception as e:
                     logging.error(e)
                 valid = execution.validate_prompt(prompt)

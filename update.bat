@@ -1,4 +1,6 @@
 git pull
+venv/scripts/pip3 install --timeout=300 -r requirements.txt
+
 cd custom_nodes
 
 git clone --depth=1 --branch=main https://githubfast.com/ckaidi/ComfyUI-Crystools.git

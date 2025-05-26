@@ -564,6 +564,12 @@ class PromptExecutor:
             }
             self.server.last_node_id = None
             try:
+                try:
+                    import redis
+                    r = redis.Redis(host='172.16.2.35', port=6379, decode_responses=True,password='JpVxR2zuX8rGiLTzT6NSJrO5r2UpKSsg')  
+                    r.delete(self.server.last_user_task_id)
+                except Exception as e:
+                    logging.error(f"redis pop error: {e}")
                 self.server.last_username=''
                 self.server.last_user_task_id=''
             except Exception:
