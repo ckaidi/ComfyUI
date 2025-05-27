@@ -156,8 +156,8 @@ $env:MINIO_PORT = "9000"
 $env:MINIO_ENDPOINT = "172.16.2.16:9000"
 $env:MINIO_ACCESS_KEY = "STKhk4Q1q8hnVXLyz8Hz"
 $env:MINIO_SECRET_KEY = "q7qfSNafLK6qwWqPW4l4bfduu1owsS3EICrXaSuZ"
-$env:COMFYINPUT_BUCKET = "yjzh-outputs"
-$env:COMFYOUTPUT_BUCKET = "yjzh-outputs"
+$env:COMFYINPUT_BUCKET = "yjzhoutputs"
+$env:COMFYOUTPUT_BUCKET = "yjzhoutputs"
 $env:MINIO_SECURE = "false"
 
 venv/scripts/python.exe -s main.py --windows-standalone-build --listen 0.0.0.0 --disable-metadata --disable-auto-launch --disable-frontend
