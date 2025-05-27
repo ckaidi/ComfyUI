@@ -172,6 +172,8 @@ class PromptServer():
         self.progress_max = -1
         self.node_num = -1
         self.node_index = -1
+        self.progress_node_num = -1
+        self.progress_node_index = -1
         self.local_ip = self.get_local_ip()
 
         middlewares = [cache_control]
@@ -573,7 +575,10 @@ class PromptServer():
         
         @routes.get("/progress")
         async def get_progress(request):
-            return web.json_response({"user": self.last_username, "task_id": self.last_user_task_id, "value": self.progress_value, "max": self.progress_max, "prompt_id": self.last_prompt_id, "node_num": self.node_num, "node_index": self.node_index, "node": self.last_node_id})
+            return web.json_response({"user": self.last_username, "task_id": self.last_user_task_id, "value": self.progress_value, "max": self.progress_max, "prompt_id": self.last_prompt_id, 
+                                      "node_num": self.node_num, "node_index": self.node_index, 
+                                      "progress_node_num": self.progress_node_num, "progress_node_index": self.progress_node_index, 
+                                      "node": self.last_node_id})
 
         def node_info(node_class):
             obj_class = nodes.NODE_CLASS_MAPPINGS[node_class]

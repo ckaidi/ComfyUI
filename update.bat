@@ -1,4 +1,5 @@
 git pull
+venv/Scripts/python.exe -m pip install --upgrade pip
 venv/scripts/pip3 install --timeout=300 -r requirements.txt
 
 cd custom_nodes
@@ -136,6 +137,11 @@ git clone --depth=1 --branch=main https://githubfast.com/ckaidi/cg-use-everywher
 
 git clone --depth=1 --branch=main https://githubfast.com/ckaidi/rgthree-comfy.git
 cd rgthree-comfy
+../../venv/scripts/pip3 install --timeout=300 -r requirements.txt
+cd ..
+
+git clone --depth=1 --branch=main https://githubfast.com/ckaidi/ComfyUI-Minio.git
+cd ComfyUI-Minio
 ../../venv/scripts/pip3 install --timeout=300 -r requirements.txt
 cd ..
 

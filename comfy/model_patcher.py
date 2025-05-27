@@ -584,6 +584,14 @@ class ModelPatcher:
         return loading
 
     def load(self, device_to=None, lowvram_model_memory=0, force_patch_weights=False, full_load=False):
+        """将模型加载到指定设备，支持低显存模式
+        
+        Args:
+            device_to: 目标设备 (如 'cuda')
+            lowvram_model_memory: 低显存模式下的最大内存限制(字节)
+            force_patch_weights: 是否强制应用权重补丁
+            full_load: 是否完全加载模型(忽略低显存限制)
+        """
         with self.use_ejected():
             self.unpatch_hooks()
             mem_counter = 0
@@ -591,38 +599,51 @@ class ModelPatcher:
             lowvram_counter = 0
             loading = self._load_list()
 
+            # 完全加载的模块列表
             load_completely = []
+            # 按内存大小降序排序
             loading.sort(reverse=True)
+            
+            # 遍历所有需要加载的模块
             for x in loading:
-                n = x[1]
-                m = x[2]
-                params = x[3]
-                module_mem = x[0]
+                n = x[1]  # 模块名称
+                m = x[2]  # 模块对象
+                params = x[3]  # 模块参数列表
+                module_mem = x[0]  # 模块内存大小
 
-                lowvram_weight = False
+                lowvram_weight = False  # 是否使用低显存模式
 
+                # 构建权重和偏置的键名
                 weight_key = "{}.weight".format(n)
                 bias_key = "{}.bias".format(n)
 
+                # 判断是否应该使用低显存模式
                 if not full_load and hasattr(m, "comfy_cast_weights"):
                     if mem_counter + module_mem >= lowvram_model_memory:
                         lowvram_weight = True
                         lowvram_counter += 1
-                        if hasattr(m, "prev_comfy_cast_weights"): #Already lowvramed
+                        if hasattr(m, "prev_comfy_cast_weights"): # 已经处于低显存模式则跳过
                             continue
 
-                cast_weight = self.force_cast_weights
+                cast_weight = self.force_cast_weights  # 是否强制转换权重
+                
+                # 低显存模式处理
                 if lowvram_weight:
                     if hasattr(m, "comfy_cast_weights"):
-                        m.weight_function = []
-                        m.bias_function = []
+                        m.weight_function = []  # 清空权重函数
+                        m.bias_function = []   # 清空偏置函数
 
+                    # 处理权重补丁
                     if weight_key in self.patches:
                         if force_patch_weights:
+                            # 强制应用补丁
                             self.patch_weight_to_device(weight_key)
                         else:
+                            # 添加低显存补丁
                             m.weight_function = [LowVramPatch(weight_key, self.patches)]
                             patch_counter += 1
+                            
+                    # 处理偏置补丁        
                     if bias_key in self.patches:
                         if force_patch_weights:
                             self.patch_weight_to_device(bias_key)
@@ -630,22 +651,27 @@ class ModelPatcher:
                             m.bias_function = [LowVramPatch(bias_key, self.patches)]
                             patch_counter += 1
 
-                    cast_weight = True
+                    cast_weight = True  # 标记需要转换权重
                 else:
+                    # 正常模式处理
                     if hasattr(m, "comfy_cast_weights"):
-                        wipe_lowvram_weight(m)
+                        wipe_lowvram_weight(m)  # 清除低显存状态
 
+                    # 如果完全加载或内存足够，则加入完全加载列表
                     if full_load or mem_counter + module_mem < lowvram_model_memory:
                         mem_counter += module_mem
                         load_completely.append((module_mem, n, m, params))
 
+                # 处理权重转换
                 if cast_weight and hasattr(m, "comfy_cast_weights"):
                     m.prev_comfy_cast_weights = m.comfy_cast_weights
                     m.comfy_cast_weights = True
 
+                # 处理权重包装器补丁
                 if weight_key in self.weight_wrapper_patches:
                     m.weight_function.extend(self.weight_wrapper_patches[weight_key])
-
+                
+                # 处理偏置包装器补丁    
                 if bias_key in self.weight_wrapper_patches:
                     m.bias_function.extend(self.weight_wrapper_patches[bias_key])
 

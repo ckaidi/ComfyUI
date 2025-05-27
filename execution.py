@@ -524,8 +524,19 @@ class PromptExecutor:
                 self.server.node_index=0
             except Exception as e:
                 logging.error(e)
+            try:
+                progress_num=0
+                for p in execution_list.pendingNodes:
+                    n=int(p)
+                    if n%2==0:
+                        progress_num+=1
+                self.server.progress_node_num = progress_num
+                self.server.progress_node_index=0
+            except Exception as e:
+                logging.error(e)
             
             index=-1
+            progress_index=-1
             while not execution_list.is_empty():
                 index+=1
                 try:
@@ -533,6 +544,12 @@ class PromptExecutor:
                 except Exception as e:
                     logging.error(e)
                 node_id, error, ex = execution_list.stage_node_execution()
+                try:
+                    if node_id %2==0:
+                        progress_index+=1
+                        self.server.progress_node_index=progress_index
+                except Exception as e:
+                    logging.error(e)
                 if error is not None:
                     self.handle_execution_error(prompt_id, dynamic_prompt.original_prompt, current_outputs, executed, error, ex)
                     break
@@ -572,6 +589,10 @@ class PromptExecutor:
                     logging.error(f"redis pop error: {e}")
                 self.server.last_username=''
                 self.server.last_user_task_id=''
+                self.server.node_num = -1
+                self.server.node_index = -1
+                self.server.progress_node_num = -1
+                self.server.progress_node_index = -1
             except Exception:
                 print('set failed')
             if comfy.model_management.DISABLE_SMART_MEMORY:
