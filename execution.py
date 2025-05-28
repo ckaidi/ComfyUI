@@ -528,7 +528,7 @@ class PromptExecutor:
                 progress_num=0
                 for p in execution_list.pendingNodes:
                     n=int(p)
-                    if n%2==0:
+                    if n%2==1:
                         progress_num+=1
                 self.server.progress_node_num = progress_num
                 self.server.progress_node_index=0
@@ -545,7 +545,7 @@ class PromptExecutor:
                     logging.error(e)
                 node_id, error, ex = execution_list.stage_node_execution()
                 try:
-                    if node_id %2==0:
+                    if node_id %2==1:
                         progress_index+=1
                         self.server.progress_node_index=progress_index
                 except Exception as e:

@@ -671,6 +671,23 @@ class PromptServer():
         #             "user_task_id":self.last_user_task_id
         #         }
         #     })
+        
+        def _getSelfInfo(prompt):
+            try:
+                if '0' in prompt and 'class_type' in prompt['0'] and prompt['0']['class_type'] == 'Primitive string multiline [Crystools]' and '_meta' in prompt['0'] and 'title' in prompt['0']['_meta'] and prompt['0']['_meta']['title'] == 'info' and 'inputs' in prompt['0'] and 'string' in prompt['0']['inputs']:
+                    content = prompt['0']['inputs']['string']
+                    self_json_data=json.loads(content)
+                    if 'username' in self_json_data and 'task_id' in self_json_data:
+                        self.last_username=str(self_json_data['username'])
+                        self.last_user_task_id=str(self_json_data['task_id'])
+                        try:
+                            import redis
+                            r = redis.Redis(host='172.16.2.35', port=6379, decode_responses=True,password='JpVxR2zuX8rGiLTzT6NSJrO5r2UpKSsg')  
+                            r.set(self.last_user_task_id,self.local_ip)
+                        except Exception as e: 
+                            logging.error(e)
+            except Exception as e:
+                logging.error(e)
 
         @routes.post("/prompt")
         async def post_prompt(request):
@@ -690,21 +707,7 @@ class PromptServer():
 
             if "prompt" in json_data:
                 prompt = json_data["prompt"]
-                try:
-                    if '0' in prompt and 'class_type' in prompt['0'] and prompt['0']['class_type'] == 'Primitive string multiline [Crystools]' and '_meta' in prompt['0'] and 'title' in prompt['0']['_meta'] and prompt['0']['_meta']['title'] == 'info' and 'inputs' in prompt['0'] and 'string' in prompt['0']['inputs']:
-                        content = prompt['0']['inputs']['string']
-                        json_data=json.loads(content)
-                        if 'username' in json_data and 'task_id' in json_data:
-                            self.last_username=str(json_data['username'])
-                            self.last_user_task_id=str(json_data['task_id'])
-                            try:
-                                import redis
-                                r = redis.Redis(host='172.16.2.35', port=6379, decode_responses=True,password='JpVxR2zuX8rGiLTzT6NSJrO5r2UpKSsg')  
-                                r.set(self.last_user_task_id,self.local_ip)
-                            except Exception as e: 
-                                logging.error(e)
-                except Exception as e:
-                    logging.error(e)
+                _getSelfInfo(prompt)
                 valid = execution.validate_prompt(prompt)
                 extra_data = {}
                 if "extra_data" in json_data:

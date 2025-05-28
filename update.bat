@@ -142,6 +142,7 @@ cd ..
 
 git clone --depth=1 --branch=main https://githubfast.com/ckaidi/ComfyUI-Minio.git
 cd ComfyUI-Minio
+git pull
 ../../venv/scripts/pip3 install --timeout=300 -r requirements.txt
 cd ..
 
