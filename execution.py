@@ -545,7 +545,7 @@ class PromptExecutor:
                     logging.error(e)
                 node_id, error, ex = execution_list.stage_node_execution()
                 try:
-                    if node_id %2==1:
+                    if int(node_id) %2==1:
                         progress_index+=1
                         self.server.progress_node_index=progress_index
                 except Exception as e:
