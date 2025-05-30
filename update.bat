@@ -183,6 +183,12 @@ git pull
 ..\..\venv\scripts\pip3 install --timeout=300 -r requirements.txt
 cd ..
 
+echo Installing ComfyUI_AdvancedRefluxControl...
+git clone --depth=1 --branch=main https://github.com/ckaidi/ComfyUI_AdvancedRefluxControl.git
+cd ComfyUI_AdvancedRefluxControl
+git pull
+cd ..
+
 echo Installing sageattention...
 ..\venv\scripts\pip3 install --timeout=300 sageattention
 
