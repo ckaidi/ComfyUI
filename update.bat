@@ -13,6 +13,7 @@ git clone --depth=1 --branch=main https://githubfast.com/ckaidi/ComfyUI-Custom-S
 
 git clone --depth=1 --branch=main https://githubfast.com/ckaidi/ComfyUI-Easy-Use.git
 cd ComfyUI-Easy-Use
+git pull
 ../../venv/scripts/pip3 install --timeout=300 -r requirements.txt
 cd ..
 
@@ -92,6 +93,9 @@ cd ComfyUI-KJNodes
 cd ..
 
 git clone --depth=1 --branch=main https://githubfast.com/ckaidi/ComfyUI-Inpaint-CropAndStitch.git
+cd ComfyUI-Inpaint-CropAndStitch
+git pull
+cd ..
 
 git clone --depth=1 --branch=main https://githubfast.com/ckaidi/ComfyUI-Manager.git
 cd ComfyUI-Manager
