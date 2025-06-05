@@ -572,6 +572,27 @@ class PromptServer():
         @routes.get("/prompt")
         async def get_prompt(request):
             return web.json_response(self.get_queue_info())
+
+        @routes.get("/file/{filename}")
+        async def get_file(request):
+            import os
+            filename = request.match_info.get("filename", None)
+            try:
+                a=os.path.exists(f'output\\{filename}')
+                return web.FileResponse(f'output\\{filename}', headers={'Content-Disposition': f'attachment; filename="{filename}"'})
+            except FileNotFoundError as e:
+                raise web.HTTPNotFound(text="File not found")
+
+        @routes.delete("/file/{filename}")
+        async def delete_file(request):
+            import os
+            filename = request.match_info.get("filename", None)
+            try:
+                if os.path.exists(f'output\\{filename}'):
+                    os.remove(f'output\\{filename}')
+                return web.json_response({"status": "success"})
+            except FileNotFoundError as e:
+                raise web.HTTPNotFound(text="File not found")
         
         @routes.get("/progress")
         async def get_progress(request):
@@ -579,7 +600,7 @@ class PromptServer():
                                       "node_num": self.node_num, "node_index": self.node_index, 
                                       "progress_node_num": self.progress_node_num, "progress_node_index": self.progress_node_index, 
                                       "node": self.last_node_id})
-
+            
         def node_info(node_class):
             obj_class = nodes.NODE_CLASS_MAPPINGS[node_class]
             info = {}
@@ -719,6 +740,10 @@ class PromptServer():
                     prompt_id = str(uuid.uuid4())
                     outputs_to_execute = valid[2]
                     self.prompt_queue.put((number, prompt_id, prompt, extra_data, outputs_to_execute))
+                    try:
+                        logging.info(f"prompt id: {prompt_id}")
+                    except Exception as e:
+                        logging.error(f"print prompt id: {e}")
                     response = {"prompt_id": prompt_id, "number": number, "node_errors": valid[3]}
                     return web.json_response(response)
                 else:
@@ -976,3 +1001,4 @@ class PromptServer():
         message = struct.pack(">I", len(node_id_bytes)) + node_id_bytes + text
 
         self.send_sync(BinaryEventTypes.TEXT, message, sid)
+
