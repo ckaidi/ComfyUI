@@ -218,6 +218,9 @@ set MINIO_SECRET_KEY=q7qfSNafLK6qwWqPW4l4bfduu1owsS3EICrXaSuZ
 set COMFYINPUT_BUCKET=yjzhoutputs
 set COMFYOUTPUT_BUCKET=yjzhoutputs
 set MINIO_SECURE=false
+set HF_ENDPOINT=https://hf-mirror.com
+
+venv\scripts\python.exe install_hf_models.py
 
 echo Starting ComfyUI...
 venv\scripts\python.exe -s main.py --windows-standalone-build --listen 0.0.0.0 --disable-metadata --disable-auto-launch --disable-frontend
