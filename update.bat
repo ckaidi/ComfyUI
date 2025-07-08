@@ -56,6 +56,7 @@ git clone --depth=1 --branch=main https://githubfast.com/ckaidi/ComfyUI_Comfyrol
 echo Installing comfyui-ollama...
 git clone --depth=1 --branch=main https://githubfast.com/ckaidi/comfyui-ollama.git
 cd comfyui-ollama
+git pull
 ..\..\venv\scripts\pip3 install --timeout=300 -r requirements.txt --quiet
 cd ..
 
