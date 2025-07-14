@@ -742,8 +742,8 @@ class PromptServer():
                         self.last_user_task_id = str(self_json_data['task_id'])
                         try:
                             import redis
-                            r = redis.Redis(
-                                host='172.16.2.35', port=6379, decode_responses=True, password='JpVxR2zuX8rGiLTzT6NSJrO5r2UpKSsg')
+                            import os
+                            r = redis.Redis(host=os.getenv('REDIS_HOST'), port=os.getenv('REDIS_PORT'), decode_responses=True,password=os.getenv("REDIS_PASSWORD"))  
                             r.set(self.last_user_task_id, self.local_ip)
                         except Exception as e:
                             logging.error(e)

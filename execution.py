@@ -582,8 +582,9 @@ class PromptExecutor:
             self.server.last_node_id = None
             try:
                 try:
+                    import os
                     import redis
-                    r = redis.Redis(host='172.16.2.35', port=6379, decode_responses=True,password='JpVxR2zuX8rGiLTzT6NSJrO5r2UpKSsg')  
+                    r = redis.Redis(host=os.getenv('REDIS_HOST'), port=os.getenv('REDIS_PORT'), decode_responses=True,password=os.getenv("REDIS_PASSWORD"))  
                     r.delete(self.server.last_user_task_id)
                 except Exception as e:
                     logging.error(f"redis pop error: {e}")
