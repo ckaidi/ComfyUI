@@ -246,7 +246,7 @@ echo install hf models...
 venv\scripts\python.exe install_hf_models.py
 
 echo Starting ComfyUI...
-venv\scripts\python.exe -s main.py --windows-standalone-build --listen 0.0.0.0 --disable-metadata --disable-auto-launch
+venv\scripts\python.exe -s main.py --windows-standalone-build --listen 0.0.0.0 --disable-metadata --disable-auto-launch --disable-frontend
 
 echo Installation and startup complete!
 endlocal
