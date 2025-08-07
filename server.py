@@ -1046,13 +1046,14 @@ class PromptServer():
                     "To see the GUI go to: {}://{}:{}".format(scheme, address_print, port))
 
         try:
+            import json
             self.send_mqtt(f"comfyui/status", json.dumps({
                 "ip":self.local_ip,
                 "status":'ready'
-            }), qos=2, retain=True)
+            }))
 
-        except:
-            pass
+        except Exception as e:
+            logging.error(e)
         
         if call_on_start is not None:
             call_on_start(scheme, self.address, self.port)
