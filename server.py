@@ -1,7 +1,9 @@
 import os
+from pydoc import cli
 import sys
 import asyncio
 import traceback
+import time
 
 import nodes
 import folder_paths
@@ -181,6 +183,7 @@ class PromptServer():
         self.progress_node_num = -1
         self.progress_node_index = -1
         self.local_ip = self.get_local_ip()
+        self.mqtt_client = self.connect_mqtt()
 
         middlewares = [cache_control]
         if args.enable_compress_response_body:
@@ -747,9 +750,25 @@ class PromptServer():
                             r.set(self.last_user_task_id, self.local_ip)
                         except Exception as e:
                             logging.error(e)
+                    
+                        try:
+                            if self.mqtt_client is not None:
+                                from datetime import datetime
+                                self.send_mqtt(f"{self.last_username}/task-add", json.dumps({
+                                    'task_id': self.last_user_task_id,
+                                    'user': self.last_username,
+                                    'ip': self.local_ip,
+                                    'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+
+                                }))
+
+
+                        except Exception as e:
+                            logging.error(e)
+
             except Exception as e:
                 logging.error(e)
-
+        
         @routes.post("/prompt")
         async def post_prompt(request):
             logging.info("got prompt")
@@ -787,6 +806,7 @@ class PromptServer():
                         logging.error(f"print prompt id: {e}")
                     response = {"prompt_id": prompt_id,
                                 "number": number, "node_errors": valid[3]}
+                    
                     return web.json_response(response)
                 else:
                     logging.warning("invalid prompt: {}".format(valid[1]))
@@ -846,6 +866,10 @@ class PromptServer():
     async def setup(self):
         timeout = aiohttp.ClientTimeout(total=None)  # no timeout
         self.client_session = aiohttp.ClientSession(timeout=timeout)
+    
+    def send_mqtt(self,topic,data):
+        if self.mqtt_client is not None:
+            self.mqtt_client.publish(topic, data,qos=2,retain=True)
 
     # 获取ip地址
     def get_local_ip(self) -> str:
@@ -1021,6 +1045,15 @@ class PromptServer():
                 logging.info(
                     "To see the GUI go to: {}://{}:{}".format(scheme, address_print, port))
 
+        try:
+            self.send_mqtt(f"comfyui/status", json.dumps({
+                "ip":self.local_ip,
+                "status":'ready'
+            }), qos=2, retain=True)
+
+        except:
+            pass
+        
         if call_on_start is not None:
             call_on_start(scheme, self.address, self.port)
 
@@ -1049,3 +1082,72 @@ class PromptServer():
         message = struct.pack(">I", len(node_id_bytes)) + node_id_bytes + text
 
         self.send_sync(BinaryEventTypes.TEXT, message, sid)
+
+
+    
+    def connect_mqtt(self):
+        try:
+            from paho.mqtt import client as mqtt_client
+
+            def on_connect(client, userdata, flags, rc, properties):
+                if rc == 0:
+                    client.publish(f"comfyui/status", json.dumps({
+                        "ip":self.local_ip,
+                        "status":'online'
+                    }), qos=2, retain=True)
+
+                    print("Connected to MQTT Broker!")
+                else:
+                    print("Failed to connect, return code %d\n", rc)
+
+            def on_connect_fail(client, userdata):
+                print("Connected to MQTT Broker!")
+
+            def on_disconnect(client, userdata, flags, rc, properties):
+                FIRST_RECONNECT_DELAY = 1
+                RECONNECT_RATE = 2
+                MAX_RECONNECT_COUNT = 12
+                MAX_RECONNECT_DELAY = 60
+                logging.info("Disconnected with result code: %s", rc)
+                reconnect_count, reconnect_delay = 0, FIRST_RECONNECT_DELAY
+                while reconnect_count < MAX_RECONNECT_COUNT:
+                    logging.info("Reconnecting in %d seconds...", reconnect_delay)
+                    time.sleep(reconnect_delay)
+
+                    try:
+                        client.reconnect()
+                        logging.info("Reconnected successfully!")
+                        return
+                    except Exception as err:
+                        logging.error("%s. Reconnect failed. Retrying...", err)
+
+                    reconnect_delay *= RECONNECT_RATE
+                    reconnect_delay = min(reconnect_delay, MAX_RECONNECT_DELAY)
+                    reconnect_count += 1
+                logging.info("Reconnect failed after %s attempts. Exiting...", reconnect_count)
+
+            broker=os.getenv('EMQX_HOST')
+            emqx_user=os.getenv('EMQX_USER')
+            emqx_password=os.getenv('EMQX_PASSWORD')
+            client_id='comfyui_'+self.local_ip.replace('.','_')
+
+            # Set Connecting Client ID
+            # client = mqtt_client.Client(client_id)
+            client = mqtt_client.Client(mqtt_client.CallbackAPIVersion.VERSION2, client_id)
+
+            client.username_pw_set(emqx_user, emqx_password)
+            client.on_connect = on_connect
+            client.on_disconnect = on_disconnect
+            client.on_connect_fail= on_connect_fail
+            client.will_set(f"comfyui/status", json.dumps({
+                "ip":self.local_ip,
+                "status":'offline'
+            }), qos=2, retain=True)
+            
+            client.connect(broker, 1883)
+            client.loop_start()  # 启动网络循环以处理回调函数
+            return client
+        except Exception as e:
+            logging.error(e)
+            return None
+

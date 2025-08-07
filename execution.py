@@ -308,7 +308,24 @@ def execute(server, dynprompt, caches, current_item, extra_data, executed, promp
             input_data_all, missing_keys = get_input_data(inputs, class_def, unique_id, caches.outputs, dynprompt, extra_data)
             if server.client_id is not None:
                 server.last_node_id = display_node_id
-                server.send_sync("executing", { "node": unique_id, "display_node": display_node_id, "prompt_id": prompt_id }, server.client_id)
+                server.send_sync("executing", { "node": unique_id, "display_node": display_node_id, "prompt_id": prompt_id }, server.client_id) 
+
+            try:
+                import json
+                server.send_mqtt(f"{server.last_username}/task-progress", json.dumps({
+                            "user": server.last_username, 
+                            "task_id": server.last_user_task_id, 
+                            "value": server.progress_value, 
+                            "max": server.progress_max, 
+                            "prompt_id": server.last_prompt_id,
+                            "node_num": server.node_num, 
+                            "node_index": server.node_index,
+                            "progress_node_num": server.progress_node_num, 
+                            "progress_node_index": server.progress_node_index,
+                            "node": server.last_node_id
+                        }))
+            except Exception as e:
+                logging.error(e)
 
             obj = caches.objects.get(unique_id)
             if obj is None:
@@ -588,6 +605,18 @@ class PromptExecutor:
                     r.delete(self.server.last_user_task_id)
                 except Exception as e:
                     logging.error(f"redis pop error: {e}")
+                
+                try:
+                    import json
+                    self.server.send_mqtt(f"{self.server.last_username}/task-end", json.dumps({
+                        "task_id": self.server.last_user_task_id,
+                        "user": self.server.last_username,
+                        "ip": self.server.local_ip,
+                        "time": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    }))
+                except Exception as e:
+                    logging.error(f"mqtt send error")
+
                 self.server.last_username=''
                 self.server.last_user_task_id=''
                 self.server.node_num = -1

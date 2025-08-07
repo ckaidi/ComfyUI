@@ -230,6 +230,23 @@ def hijack_progress(server_instance):
             logging.error(e)
         progress = {"value": value, "max": total, "prompt_id": server_instance.last_prompt_id, "node": server_instance.last_node_id}
 
+        try:
+            import json
+            server_instance.send_mqtt(f"{server_instance.last_username}/task-progress", json.dumps({
+                        "user": server_instance.last_username, 
+                        "task_id": server_instance.last_user_task_id, 
+                        "value": server_instance.progress_value, 
+                        "max": server_instance.progress_max, 
+                        "prompt_id": server_instance.last_prompt_id,
+                        "node_num": server_instance.node_num, 
+                        "node_index": server_instance.node_index,
+                        "progress_node_num": server_instance.progress_node_num, 
+                        "progress_node_index": server_instance.progress_node_index,
+                        "node": server_instance.last_node_id
+                    }))
+        except Exception as e:
+            logging.error(e)
+
         server_instance.send_sync("progress", progress, server_instance.client_id)
         if preview_image is not None:
             server_instance.send_sync(BinaryEventTypes.UNENCODED_PREVIEW_IMAGE, preview_image, server_instance.client_id)
