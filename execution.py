@@ -312,6 +312,7 @@ def execute(server, dynprompt, caches, current_item, extra_data, executed, promp
 
             try:
                 import json
+                from datetime import datetime
                 server.send_mqtt(f"{server.last_username}/task-progress", json.dumps({
                             "user": server.last_username, 
                             "task_id": server.last_user_task_id, 
@@ -322,7 +323,9 @@ def execute(server, dynprompt, caches, current_item, extra_data, executed, promp
                             "node_index": server.node_index,
                             "progress_node_num": server.progress_node_num, 
                             "progress_node_index": server.progress_node_index,
-                            "node": server.last_node_id
+                            "node": server.last_node_id,
+                            "ip":server.local_ip,
+                            'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                         }))
             except Exception as e:
                 logging.error(e)
@@ -608,6 +611,7 @@ class PromptExecutor:
                 
                 try:
                     import json
+                    from datetime import datetime
                     self.server.send_mqtt(f"{self.server.last_username}/task-end", json.dumps({
                         "task_id": self.server.last_user_task_id,
                         "user": self.server.last_username,

@@ -232,6 +232,7 @@ def hijack_progress(server_instance):
 
         try:
             import json
+            from datetime import datetime
             server_instance.send_mqtt(f"{server_instance.last_username}/task-progress", json.dumps({
                         "user": server_instance.last_username, 
                         "task_id": server_instance.last_user_task_id, 
@@ -242,7 +243,9 @@ def hijack_progress(server_instance):
                         "node_index": server_instance.node_index,
                         "progress_node_num": server_instance.progress_node_num, 
                         "progress_node_index": server_instance.progress_node_index,
-                        "node": server_instance.last_node_id
+                        "node": server_instance.last_node_id,
+                        "ip":server_instance.local_ip,
+                        'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                     }))
         except Exception as e:
             logging.error(e)

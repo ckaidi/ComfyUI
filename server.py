@@ -759,7 +759,6 @@ class PromptServer():
                                     'user': self.last_username,
                                     'ip': self.local_ip,
                                     'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-
                                 }))
 
 
@@ -869,7 +868,7 @@ class PromptServer():
     
     def send_mqtt(self,topic,data):
         if self.mqtt_client is not None:
-            self.mqtt_client.publish(topic, data,qos=2,retain=True)
+            self.mqtt_client.publish(topic, data,qos=2)
 
     # 获取ip地址
     def get_local_ip(self) -> str:
@@ -1047,9 +1046,11 @@ class PromptServer():
 
         try:
             import json
+            from datetime import datetime
             self.send_mqtt(f"comfyui/status", json.dumps({
                 "ip":self.local_ip,
-                "status":'ready'
+                "status":'ready',
+                'time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
             }))
 
         except Exception as e:
