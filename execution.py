@@ -307,6 +307,7 @@ def execute(server, dynprompt, caches, current_item, extra_data, executed, promp
         else:
             input_data_all, missing_keys = get_input_data(inputs, class_def, unique_id, caches.outputs, dynprompt, extra_data)
             if server.client_id is not None:
+                server.progress_value = -1
                 server.last_node_id = display_node_id
                 server.send_sync("executing", { "node": unique_id, "display_node": display_node_id, "prompt_id": prompt_id }, server.client_id) 
 
@@ -599,6 +600,7 @@ class PromptExecutor:
                 "outputs": ui_outputs,
                 "meta": meta_outputs,
             }
+            self.server.progress_value = -1
             self.server.last_node_id = None
             try:
                 try:
