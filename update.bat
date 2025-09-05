@@ -166,6 +166,7 @@ cd ..
 echo Installing ComfyUI-VideoHelperSuite...
 git clone --depth=1 --branch=main https://githubfast.com/ckaidi/ComfyUI-VideoHelperSuite.git
 cd ComfyUI-VideoHelperSuite
+git pull
 ..\..\venv\scripts\pip3 install --timeout=300 -r requirements.txt
 cd ..
 
