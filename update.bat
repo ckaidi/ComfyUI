@@ -221,6 +221,11 @@ cd ComfyUI_yanc
 git pull
 cd ..
 
+git clone --depth=1 --branch=master https://githubfast.com/ckaidi/ComfyLiterals
+cd ComfyLiterals
+git pull
+cd ..
+
 echo Installing sageattention...
 ..\venv\scripts\pip3 install --timeout=300 sageattention
 
