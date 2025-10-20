@@ -160,6 +160,7 @@ cd ..
 echo Installing ComfyUI_LayerStyle_Advance...
 git clone --depth=1 --branch=main https://githubfast.com/ckaidi/ComfyUI_LayerStyle_Advance.git
 cd ComfyUI_LayerStyle_Advance
+git pull
 ..\..\venv\scripts\pip3 install --timeout=300 -r requirements.txt
 cd ..
 

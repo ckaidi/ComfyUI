@@ -26,3 +26,6 @@ filtered-openapi.yaml
 uv.lock
 env_vars.txt
 temp.png
+sam_vit_h_4b8939.pth
+checkpoints/sam2_hiera_large.pt
+**/*.pt

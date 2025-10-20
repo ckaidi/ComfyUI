@@ -31,3 +31,7 @@ pydantic-settings~=2.0
 redis~=6.1.0
 
 paho-mqtt~=2.1.0
+
+onnx
+segment_anything
+onnxruntime

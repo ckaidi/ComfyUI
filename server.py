@@ -19,7 +19,7 @@ import ipaddress
 from PIL import Image, ImageOps
 from PIL.PngImagePlugin import PngInfo
 from io import BytesIO
-
+from datetime import datetime
 import aiohttp
 from aiohttp import web
 import logging
@@ -753,24 +753,55 @@ class PromptServer():
             queue_info['queue_pending'] = current_queue[1]
             return web.json_response(queue_info)
 
-        # @routes.get("/queue_running")
-        # async def get_queue(request):
-        #     current_queue = self.prompt_queue.get_current_queue()
-        #     if len(current_queue[0]) == 0:
-        #         return web.json_response({
-        #             'success': True,
-        #             'msg': '',
-        #             'data': {}
-        #         })
-        #     return web.json_response({
-        #         'success': True,
-        #         'msg': '',
-        #         'data': {
-        #             'prompt_id': current_queue[0][0][1],
-        #             "user":self.last_username,
-        #             "user_task_id":self.last_user_task_id
-        #         }
-        #     })
+        @routes.post("/image2npy")
+        async def image2npy(request):
+            post = await request.post()
+            image = post.get("image")
+            image_upload_type = post.get("type")
+            upload_dir, image_upload_type = get_dir_by_type(image_upload_type)
+
+            if image and image.file:
+                import numpy as np
+                import cv2
+                from segment_anything import sam_model_registry, SamPredictor
+
+                checkpoint = "sam_vit_h_4b8939.pth"
+                model_type = "vit_h"
+                sam = sam_model_registry[model_type](checkpoint=checkpoint)
+                sam.to(device='cuda')
+                predictor = SamPredictor(sam)
+
+                file_bytes = image.file.read()
+                file_array = np.frombuffer(file_bytes, dtype=np.uint8)
+                image_np = cv2.imdecode(file_array, cv2.IMREAD_COLOR)
+                predictor.set_image(image_np)
+                image.file.seek(0)
+
+                image_embedding = predictor.get_image_embedding().cpu().numpy()
+                filename = image.filename
+                if not filename:
+                    return web.Response(status=400)
+                
+                current_time = datetime.now().strftime("%Y-%m-%d")
+                folder = f'output/{current_time}/'
+                if not os.path.exists(folder):
+                    os.makedirs(folder)
+                import uuid
+                uuid_str = str(uuid.uuid4())
+                npy_name = folder + uuid_str + ".npy"
+                np.save(npy_name, image_embedding)
+                filepath = npy_name
+
+                try:
+                    data = np.frombuffer(image.file.read(), dtype=np.uint8)
+                    np.save(filepath, data)
+                except Exception:
+                    with open(filepath, "wb") as f:
+                        f.write(b"")
+
+                return web.json_response({"name": npy_name, "type": image_upload_type})
+            else:
+                return web.Response(status=400)
 
         def _getSelfInfo(prompt):
             try:
@@ -790,7 +821,6 @@ class PromptServer():
                     
                         try:
                             if self.mqtt_client is not None:
-                                from datetime import datetime
                                 self.send_mqtt(f"{self.last_username}/task-add", json.dumps({
                                     'task_id': self.last_user_task_id,
                                     'user': self.last_username,
@@ -1048,7 +1078,6 @@ class PromptServer():
         metadata["image_type"] = mimetype
 
         # Serialize metadata as JSON
-        import json
         metadata_json = json.dumps(metadata).encode('utf-8')
         metadata_length = len(metadata_json)
 
@@ -1133,8 +1162,6 @@ class PromptServer():
                     "To see the GUI go to: {}://{}:{}".format(scheme, address_print, port))
 
         try:
-            import json
-            from datetime import datetime
             self.send_mqtt(f"comfyui/status", json.dumps({
                 "ip":self.local_ip,
                 "status":'ready',
