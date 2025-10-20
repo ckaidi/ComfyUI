@@ -772,32 +772,25 @@ class PromptServer():
                 predictor = SamPredictor(sam)
 
                 file_bytes = image.file.read()
-                file_array = np.frombuffer(file_bytes, dtype=np.uint8)
-                image_np = cv2.imdecode(file_array, cv2.IMREAD_COLOR)
-                predictor.set_image(image_np)
-                image.file.seek(0)
-
-                image_embedding = predictor.get_image_embedding().cpu().numpy()
-                filename = image.filename
-                if not filename:
-                    return web.Response(status=400)
                 
                 current_time = datetime.now().strftime("%Y-%m-%d")
                 folder = f'output/{current_time}/'
+                
                 if not os.path.exists(folder):
                     os.makedirs(folder)
                 import uuid
                 uuid_str = str(uuid.uuid4())
+
+                image_save_path = folder + uuid_str + ".png"
+                with open(image_save_path, "wb") as f:
+                    f.write(file_bytes)
+                
+                image_np = cv2.imread(image_save_path)
+                predictor.set_image(image_np)
+
+                image_embedding = predictor.get_image_embedding().cpu().numpy()
                 npy_name = folder + uuid_str + ".npy"
                 np.save(npy_name, image_embedding)
-                filepath = npy_name
-
-                try:
-                    data = np.frombuffer(image.file.read(), dtype=np.uint8)
-                    np.save(filepath, data)
-                except Exception:
-                    with open(filepath, "wb") as f:
-                        f.write(b"")
 
                 return web.json_response({"name": npy_name, "type": image_upload_type})
             else:
