@@ -765,7 +765,7 @@ class PromptServer():
                 import cv2
                 from segment_anything import sam_model_registry, SamPredictor
 
-                checkpoint = "models/sam/sam_vit_h_4b8939.pth"
+                checkpoint = "models/sams/sam_vit_h_4b8939.pth"
                 model_type = "vit_h"
                 sam = sam_model_registry[model_type](checkpoint=checkpoint)
                 sam.to(device='cuda')
