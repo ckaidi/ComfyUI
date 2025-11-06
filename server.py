@@ -791,8 +791,17 @@ class PromptServer():
                 image_embedding = predictor.get_image_embedding().cpu().numpy()
                 npy_name = folder + uuid_str + ".npy"
                 np.save(npy_name, image_embedding)
-
-                return web.json_response({"name": npy_name, "type": image_upload_type})
+                # 直接返回文件
+                try:
+                    a = os.path.exists(npy_name)
+                    if not a:
+                        if os.path.exists(npy_name):
+                            return web.FileResponse(npy_name, headers={'Content-Disposition': f'attachment; filename="{npy_name}"'})
+                    else:
+                        return web.FileResponse(npy_name, headers={'Content-Disposition': f'attachment; filename="{npy_name}"'})
+                except FileNotFoundError as e:
+                    raise web.HTTPNotFound(text="File not found")
+                return web.Response(status=404)
             else:
                 return web.Response(status=400)
 
