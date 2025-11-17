@@ -222,6 +222,12 @@ cd ComfyUI_yanc
 git pull
 cd ..
 
+git clone --depth=1 --branch=main https://githubfast.com/ckaidi/ComfyUI-nunchaku
+cd ComfyUI-nunchaku
+git pull
+..\..\venv\scripts\pip3 install --timeout=300 -r requirements.txt
+cd ..
+
 git clone --depth=1 --branch=master https://githubfast.com/ckaidi/ComfyLiterals
 cd ComfyLiterals
 git pull

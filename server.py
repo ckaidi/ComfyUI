@@ -201,18 +201,6 @@ class PromptServer():
         self.local_ip = self.get_local_ip()
         self.mqtt_client = self.connect_mqtt()
 
-        self.last_username = ''
-        self.last_user_task_id = ''
-        self.last_prompt_id = ''
-        self.progress_value = -1
-        self.progress_max = -1
-        self.node_num = -1
-        self.node_index = -1
-        self.progress_node_num = -1
-        self.progress_node_index = -1
-        self.local_ip = self.get_local_ip()
-        self.mqtt_client = self.connect_mqtt()
-
         middlewares = [cache_control, deprecation_warning]
         if args.enable_compress_response_body:
             middlewares.append(compress_body)
