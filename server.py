@@ -907,8 +907,6 @@ class PromptServer():
                     extra_data["create_time"] = int(time.time() * 1000)  # timestamp in milliseconds
                     self.prompt_queue.put((number, prompt_id, prompt, extra_data, outputs_to_execute, sensitive))
                     response = {"prompt_id": prompt_id, "number": number, "node_errors": valid[3]}
-                    self.prompt_queue.put(
-                        (number, prompt_id, prompt, extra_data, outputs_to_execute))
                     try:
                         logging.info(f"prompt id: {prompt_id}")
                     except Exception as e:
