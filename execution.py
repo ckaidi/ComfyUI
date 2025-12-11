@@ -685,105 +685,173 @@ class PromptExecutor:
         asyncio.run(self.execute_async(prompt, prompt_id, extra_data, execute_outputs))
 
     async def execute_async(self, prompt, prompt_id, extra_data={}, execute_outputs=[]):
+        """
+        异步执行ComfyUI工作流提示词
+        
+        Args:
+            prompt (dict): 工作流提示词字典，包含节点及其连接关系
+            prompt_id (str): 提示词ID，用于标识和跟踪执行过程
+            extra_data (dict): 额外数据，如客户端ID等，默认为空字典
+            execute_outputs (list): 需要执行的输出节点列表，默认为空列表
+            
+        功能说明:
+            1. 初始化执行环境和缓存
+            2. 处理已缓存的节点
+            3. 按拓扑顺序执行工作流中的各个节点
+            4. 处理异步节点和子图扩展
+            5. 收集执行结果和UI输出
+            6. 清理资源并发送执行完成消息
+        """
+        # 重置中断处理标志
         nodes.interrupt_processing(False)
 
+        # 设置客户端ID（如果提供）
         if "client_id" in extra_data:
             self.server.client_id = extra_data["client_id"]
         else:
             self.server.client_id = None
 
+        # 初始化状态消息列表，并发送执行开始消息
         self.status_messages = []
         self.add_message("execution_start", { "prompt_id": prompt_id}, broadcast=False)
 
+        # 在推理模式下执行工作流
         with torch.inference_mode():
+            # 创建动态提示词对象
             dynamic_prompt = DynamicPrompt(prompt)
+            
+            # 重置进度状态并添加WebUI进度处理器
             reset_progress_state(prompt_id, dynamic_prompt)
             add_progress_handler(WebUIProgressHandler(self.server))
+            
+            # 创建变更检查缓存
             is_changed_cache = IsChangedCache(prompt_id, dynamic_prompt, self.caches.outputs)
+            
+            # 为所有缓存设置当前提示词并清理未使用的缓存
             for cache in self.caches.all:
                 await cache.set_prompt(dynamic_prompt, prompt.keys(), is_changed_cache)
                 cache.clean_unused()
 
+            # 收集已缓存的节点
             cached_nodes = []
             for node_id in prompt:
                 if self.caches.outputs.get(node_id) is not None:
                     cached_nodes.append(node_id)
 
+            # 清理模型垃圾回收
             comfy.model_management.cleanup_models_gc()
         
+            # 发送已缓存节点的消息
             self.add_message("execution_cached",
                           { "nodes": cached_nodes, "prompt_id": prompt_id},
                           broadcast=False)
-            pending_subgraph_results = {}
-            pending_async_nodes = {} # TODO - Unify this with pending_subgraph_results
-            ui_node_outputs = {}
-            executed = set()
-            execution_list = ExecutionList(dynamic_prompt, self.caches.outputs)
-            current_outputs = self.caches.outputs.all_node_ids()
+                          
+            # 初始化待处理的数据结构
+            pending_subgraph_results = {}  # 待处理的子图结果
+            pending_async_nodes = {}       # 待处理的异步节点（TODO：与pending_subgraph_results统一）
+            ui_node_outputs = {}           # UI节点输出
+            executed = set()               # 已执行节点集合
+            execution_list = ExecutionList(dynamic_prompt, self.caches.outputs)  # 执行列表
+            current_outputs = self.caches.outputs.all_node_ids()  # 当前所有输出节点ID
+            
+            # 将指定的输出节点添加到执行列表中
             for node_id in list(execute_outputs):
                 execution_list.add_node(node_id)
 
+            # 设置服务器端的节点计数和索引（用于进度显示）
             try:
                 self.server.node_num = len(execution_list.pendingNodes)
-                self.server.node_index=0
+                self.server.node_index = 0
             except Exception as e:
                 logging.error(e)
+                
             try:
-                progress_num=0
+                # 计算奇数节点数量作为进度节点数
+                progress_num = 0
                 for p in execution_list.pendingNodes:
-                    n=int(p)
-                    if n%2==1:
-                        progress_num+=1
+                    n = int(p)
+                    if n % 2 == 1:
+                        progress_num += 1
                 self.server.progress_node_num = progress_num
-                self.server.progress_node_index=0
+                self.server.progress_node_index = 0
             except Exception as e:
                 logging.error(e)
             
-            index=-1
-            progress_index=-1
+            # 节点执行索引初始化
+            index = -1
+            progress_index = -1
+            
+            # 主执行循环：按拓扑顺序执行所有待处理节点
             while not execution_list.is_empty():
-                index+=1
+                index += 1
+                
+                # 更新服务器端的节点索引
                 try:
-                    self.server.node_index=index
+                    self.server.node_index = index
                 except Exception as e:
                     logging.error(e)
+                    
+                # 获取下一个可执行节点（可能需要等待异步操作完成）
                 node_id, error, ex = await execution_list.stage_node_execution()
+                
+                # 更新进度索引
                 try:
-                    if int(node_id) %2==1:
-                        progress_index+=1
-                        self.server.progress_node_index=progress_index
+                    if int(node_id) % 2 == 1:
+                        progress_index += 1
+                        self.server.progress_node_index = progress_index
                 except Exception as e:
                     logging.error(e)
+                    
+                # 如果有错误，处理执行错误并跳出循环
                 if error is not None:
                     self.handle_execution_error(prompt_id, dynamic_prompt.original_prompt, current_outputs, executed, error, ex)
                     break
 
+                # 确保节点ID不为空
                 assert node_id is not None, "Node ID should not be None at this point"
+                
+                # 执行具体的节点计算
                 result, error, ex = await execute(self.server, dynamic_prompt, self.caches, node_id, extra_data, executed, prompt_id, execution_list, pending_subgraph_results, pending_async_nodes, ui_node_outputs)
+                
+                # 根据执行结果更新成功状态
                 self.success = result != ExecutionResult.FAILURE
+                
+                # 根据执行结果进行不同处理
                 if result == ExecutionResult.FAILURE:
+                    # 执行失败，处理错误并跳出循环
                     self.handle_execution_error(prompt_id, dynamic_prompt.original_prompt, current_outputs, executed, error, ex)
                     break
                 elif result == ExecutionResult.PENDING:
+                    # 执行挂起（通常是异步操作），取消当前节点的执行阶段
                     execution_list.unstage_node_execution()
-                else: # result == ExecutionResult.SUCCESS:
+                else:  # result == ExecutionResult.SUCCESS:
+                    # 执行成功，标记节点执行完成
                     execution_list.complete_node_execution()
+                    
+                # 检查RAM压力并进行缓存轮询
                 self.caches.outputs.poll(ram_headroom=self.cache_args["ram"])
             else:
-                # Only execute when the while-loop ends without break
+                # 只有当while循环正常结束（没有break）时才执行
                 self.add_message("execution_success", { "prompt_id": prompt_id }, broadcast=False)
 
+            # 整理UI输出和元数据输出
             ui_outputs = {}
             meta_outputs = {}
             for node_id, ui_info in ui_node_outputs.items():
                 ui_outputs[node_id] = ui_info["output"]
                 meta_outputs[node_id] = ui_info["meta"]
+                
+            # 构建历史执行结果
             self.history_result = {
                 "outputs": ui_outputs,
                 "meta": meta_outputs,
             }
+            
+            # 重置进度值和最后节点ID
             self.server.progress_value = -1
             self.server.last_node_id = None
+            
+            # 清理Redis和MQTT相关资源
             try:
                 try:
                     import os
@@ -805,14 +873,17 @@ class PromptExecutor:
                 except Exception as e:
                     logging.error(f"mqtt send error")
 
-                self.server.last_username=''
-                self.server.last_user_task_id=''
+                # 重置服务器端的各种状态变量
+                self.server.last_username = ''
+                self.server.last_user_task_id = ''
                 self.server.node_num = -1
                 self.server.node_index = -1
                 self.server.progress_node_num = -1
                 self.server.progress_node_index = -1
             except Exception:
                 print('set failed')
+                
+            # 如果禁用了智能内存管理，则卸载所有模型
             if comfy.model_management.DISABLE_SMART_MEMORY:
                 comfy.model_management.unload_all_models()
 

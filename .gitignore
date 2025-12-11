@@ -30,3 +30,5 @@ sam_vit_h_4b8939.pth
 checkpoints/sam2_hiera_large.pt
 **/*.pt
 startup-scripts/install-scripts.txt
+models/configs/*
+models/configs
