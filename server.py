@@ -869,7 +869,8 @@ class PromptServer():
         
         @routes.post("/prompt")
         async def post_prompt(request):
-            logging.info("got prompt")
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            logging.info(f"{current_time}：got prompt")
             json_data = await request.json()
             json_data = self.trigger_on_prompt(json_data)
 
