@@ -238,6 +238,11 @@ cd ComfyUI-GLM4
 git pull
 cd ..
 
+git clone --depth=1 --branch=main https://githubfast.com/ckaidi/ComfyUI-Login.git
+cd ComfyUI-Login
+git pull
+cd ..
+
 echo Installing sageattention...
 ..\venv\scripts\pip3 install --timeout=300 sageattention
 
