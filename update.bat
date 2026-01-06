@@ -241,6 +241,7 @@ cd ..
 git clone --depth=1 --branch=main https://githubfast.com/ckaidi/ComfyUI-Login.git
 cd ComfyUI-Login
 git pull
+..\..\venv\scripts\pip3 install --timeout=300 -r requirements.txt
 cd ..
 
 echo Installing sageattention...
