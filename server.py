@@ -1311,7 +1311,7 @@ class PromptServer():
             broker=os.getenv('EMQX_HOST')
             emqx_user=os.getenv('EMQX_USER')
             emqx_password=os.getenv('EMQX_PASSWORD')
-            client_id='comfyui_'+self.local_ip.replace('.','_')
+            client_id='comfyui_'+self.local_ip.replace('.','_')+'_'+str(getattr(args, "port", 8188))
 
             # Set Connecting Client ID
             # client = mqtt_client.Client(client_id)
