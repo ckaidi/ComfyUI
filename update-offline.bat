@@ -20,7 +20,10 @@ if exist "%env_file%" (
 )
 
 echo Starting ComfyUI...
-venv\scripts\python.exe -s main.py --windows-standalone-build --listen 0.0.0.0 --disable-metadata --disable-auto-launch
+set "PORT=%~1"
+if "%PORT%"=="" set "PORT=8188"
+echo Using port: %PORT%
+venv\scripts\python.exe -s main.py --windows-standalone-build --listen 0.0.0.0 --port %PORT% --disable-metadata --disable-auto-launch
 
 echo Installation and startup complete!
 endlocal
